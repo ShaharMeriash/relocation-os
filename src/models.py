@@ -41,6 +41,8 @@ class RelocationProfile(Base):
     notes = Column(Text, nullable=True)
     # Relationship - easy access to all phases for this profile
     phases = relationship("RelocationPhase", back_populates="relocation_profile", cascade="all, delete-orphan")
+    # Relationship - easy access to all tasks for this profile
+    tasks = relationship("Task", back_populates="relocation_profile", cascade="all, delete-orphan")
     def __repr__(self):
         """
         String representation of the object
@@ -69,11 +71,45 @@ class RelocationPhase(Base):
     
     # Relationship - easy access to the parent profile
     relocation_profile = relationship("RelocationProfile", back_populates="phases")
-    
+    # Relationship - easy access to all tasks in this phase
+    tasks = relationship("Task", back_populates="phase", cascade="all, delete-orphan")
     def __repr__(self):
         """String representation for debugging"""
         return f"<RelocationPhase(name='{self.name}', months={self.relative_start_month} to {self.relative_end_month})>"
-
+class Task(Base):
+    """
+    Represents a task/action item in the relocation process
+    Tasks belong to phases and help track what needs to be done
+    """
+    __tablename__ = 'tasks'
+    
+    # Primary key
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    
+    # Task details
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    status = Column(String(20), default='not_started')  # not_started, in_progress, completed
+    critical = Column(Boolean, default=False)  # Is this task critical/important?
+    
+    # Dates
+    planned_date = Column(Date, nullable=True)
+    completed_date = Column(Date, nullable=True)
+    
+    # Notes
+    notes = Column(Text, nullable=True)
+    
+    # Foreign keys
+    phase_id = Column(Integer, ForeignKey('relocation_phases.id'), nullable=False)
+    relocation_profile_id = Column(Integer, ForeignKey('relocation_profiles.id'), nullable=False)
+    
+    # Relationships
+    phase = relationship("RelocationPhase", back_populates="tasks")
+    relocation_profile = relationship("RelocationProfile", back_populates="tasks")
+    
+    def __repr__(self):
+        """String representation for debugging"""
+        return f"<Task(title='{self.title}', status='{self.status}', critical={self.critical})>"
 # Database setup functions
 def get_engine(db_path=None):
     """

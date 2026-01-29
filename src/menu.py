@@ -20,6 +20,15 @@ from phase_operations import (
     delete_phase,
     display_phase
 )
+from task_operations import (
+    create_task,
+    get_all_tasks,
+    get_task_by_id,
+    update_task,
+    delete_task,
+    mark_task_completed,
+    display_task
+)
 
 def clear_screen():
     """Clear the terminal screen"""
@@ -897,7 +906,427 @@ def menu_delete_phase():
         print("\n✅ Phase deleted successfully")
     else:
         print("\n❌ Failed to delete phase")
+def menu_create_task():
+    """Create a new task"""
+    print_header("Create New Task")
+    
+    # First, show all profiles
+    profiles = get_all_profiles()
+    if not profiles:
+        print("❌ No profiles found. Create a profile first!")
+        return
+    
+    print("Available profiles:")
+    for p in profiles:
+        print(f"  ID {p.id}: {p.relocation_name}")
+    
+    print()
+    
+    # Get profile ID
+    try:
+        profile_id = int(input("Enter profile ID for this task: ").strip())
+    except ValueError:
+        print("❌ Please enter a valid number")
+        return
+    
+    # Verify profile exists
+    profile = get_profile_by_id(profile_id)
+    if not profile:
+        print(f"❌ No profile found with ID {profile_id}")
+        return
+    
+    # Get phases for this profile
+    phases = get_all_phases(relocation_profile_id=profile_id)
+    if not phases:
+        print(f"❌ No phases found for this profile. Create a phase first!")
+        return
+    
+    print(f"\nAvailable phases for '{profile.relocation_name}':")
+    for p in phases:
+        print(f"  ID {p.id}: {p.name} (Months {p.relative_start_month} to {p.relative_end_month})")
+    
+    print()
+    
+    # Get phase ID
+    try:
+        phase_id = int(input("Enter phase ID for this task: ").strip())
+    except ValueError:
+        print("❌ Please enter a valid number")
+        return
+    
+    # Verify phase exists and belongs to this profile
+    phase = get_phase_by_id(phase_id)
+    if not phase or phase.relocation_profile_id != profile_id:
+        print(f"❌ Invalid phase ID for this profile")
+        return
+    
+    print(f"\nCreating task for phase: {phase.name}")
+    print("-" * 60)
+    
+    # Get task details
+    title = input("Task title: ").strip()
+    if not title:
+        print("❌ Task title is required!")
+        return
+    
+    description = input("Description (optional): ").strip()
+    if not description:
+        description = None
+    
+    # Status
+    print("\nStatus:")
+    print("  1. Not started (default)")
+    print("  2. In progress")
+    print("  3. Completed")
+    status_choice = input("Choose status (1-3, or Enter for default): ").strip()
+    
+    status_map = {
+        '1': 'not_started',
+        '2': 'in_progress',
+        '3': 'completed',
+        '': 'not_started'
+    }
+    status = status_map.get(status_choice, 'not_started')
+    
+    # Critical
+    critical = get_yes_no_input("Is this task critical/important?")
+    
+    # Planned date
+    print("\nPlanned date (optional):")
+    planned_date = get_date_input("Enter planned date or press Enter to skip:")
+    
+    # Notes
+    notes = input("Additional notes (optional): ").strip()
+    if not notes:
+        notes = None
+    
+    # Confirm
+    print("\n" + "-" * 60)
+    print("REVIEW TASK:")
+    print(f"  Title: {title}")
+    print(f"  Phase: {phase.name}")
+    print(f"  Status: {status.replace('_', ' ').title()}")
+    print(f"  Critical: {'Yes' if critical else 'No'}")
+    if description:
+        print(f"  Description: {description}")
+    if planned_date:
+        print(f"  Planned Date: {planned_date}")
+    if notes:
+        print(f"  Notes: {notes}")
+    print("-" * 60)
+    
+    if not get_yes_no_input("\nCreate this task?"):
+        print("❌ Task creation cancelled")
+        return
+    
+    # Create the task
+    try:
+        task = create_task(
+            relocation_profile_id=profile_id,
+            phase_id=phase_id,
+            title=title,
+            description=description,
+            status=status,
+            critical=critical,
+            planned_date=planned_date,
+            notes=notes
+        )
+        print("\n✅ Task created successfully!")
+        display_task(task)
+    except Exception as e:
+        print(f"\n❌ Error creating task: {e}")
 
+
+def menu_view_all_tasks():
+    """View all tasks with filtering options"""
+    print_header("View Tasks")
+    
+    # Ask about filtering
+    print("Filter options:")
+    print("  1. View all tasks")
+    print("  2. Filter by profile")
+    print("  3. Filter by phase")
+    print("  4. Filter by status")
+    
+    filter_choice = input("\nChoose filter (1-4): ").strip()
+    
+    profile_id = None
+    phase_id = None
+    status = None
+    
+    if filter_choice == '2':
+        # Filter by profile
+        profiles = get_all_profiles()
+        if not profiles:
+            print("❌ No profiles found")
+            return
+        
+        print("\nAvailable profiles:")
+        for p in profiles:
+            print(f"  ID {p.id}: {p.relocation_name}")
+        
+        try:
+            profile_id = int(input("\nEnter profile ID: ").strip())
+        except ValueError:
+            print("❌ Invalid profile ID")
+            return
+    
+    elif filter_choice == '3':
+        # Filter by phase
+        phases = get_all_phases()
+        if not phases:
+            print("❌ No phases found")
+            return
+        
+        print("\nAvailable phases:")
+        for p in phases:
+            print(f"  ID {p.id}: {p.name} (Profile ID: {p.relocation_profile_id})")
+        
+        try:
+            phase_id = int(input("\nEnter phase ID: ").strip())
+        except ValueError:
+            print("❌ Invalid phase ID")
+            return
+    
+    elif filter_choice == '4':
+        # Filter by status
+        print("\nStatus options:")
+        print("  1. Not started")
+        print("  2. In progress")
+        print("  3. Completed")
+        
+        status_choice = input("\nChoose status (1-3): ").strip()
+        status_map = {
+            '1': 'not_started',
+            '2': 'in_progress',
+            '3': 'completed'
+        }
+        status = status_map.get(status_choice)
+    
+    # Get tasks
+    tasks = get_all_tasks(
+        relocation_profile_id=profile_id,
+        phase_id=phase_id,
+        status=status
+    )
+    
+    if not tasks:
+        print("\nNo tasks found.")
+        return
+    
+    print(f"\nTotal tasks: {len(tasks)}\n")
+    
+    for task in tasks:
+        display_task(task)
+
+
+def menu_update_task():
+    """Update an existing task"""
+    print_header("Update Task")
+    
+    # Show all tasks
+    tasks = get_all_tasks()
+    if not tasks:
+        print("No tasks found.")
+        return
+    
+    print("Available tasks:")
+    for t in tasks:
+        status_emoji = {'not_started': '⏸️', 'in_progress': '🔄', 'completed': '✅'}
+        emoji = status_emoji.get(t.status, '❓')
+        critical = "🔴" if t.critical else ""
+        print(f"  ID {t.id}: {emoji} {t.title} {critical}")
+    
+    print()
+    
+    # Get task ID
+    try:
+        task_id = int(input("Enter task ID to update: ").strip())
+    except ValueError:
+        print("❌ Please enter a valid number")
+        return
+    
+    # Get the task
+    task = get_task_by_id(task_id)
+    if not task:
+        print(f"❌ No task found with ID {task_id}")
+        return
+    
+    # Show current task
+    print("\nCurrent task:")
+    display_task(task)
+    
+    # Ask what to update
+    print("What would you like to update? (Press Enter to skip)")
+    print("-" * 60)
+    
+    updates = {}
+    
+    # Title
+    new_title = input(f"Title [{task.title}]: ").strip()
+    if new_title:
+        updates['title'] = new_title
+    
+    # Description
+    print(f"Current description: {task.description or 'None'}")
+    if get_yes_no_input("Update description?"):
+        new_desc = input("Enter new description: ").strip()
+        updates['description'] = new_desc if new_desc else None
+    
+    # Status
+    print(f"\nCurrent status: {task.status.replace('_', ' ').title()}")
+    if get_yes_no_input("Update status?"):
+        print("  1. Not started")
+        print("  2. In progress")
+        print("  3. Completed")
+        status_choice = input("Choose status (1-3): ").strip()
+        status_map = {'1': 'not_started', '2': 'in_progress', '3': 'completed'}
+        if status_choice in status_map:
+            updates['status'] = status_map[status_choice]
+            
+            # If marking as completed, set completed date
+            if status_map[status_choice] == 'completed':
+                from datetime import date
+                updates['completed_date'] = date.today()
+    
+    # Critical
+    current_critical = "Yes" if task.critical else "No"
+    if get_yes_no_input(f"Update critical status? (currently: {current_critical})"):
+        updates['critical'] = get_yes_no_input("Is this task critical?")
+    
+    # Planned date
+    print(f"Current planned date: {task.planned_date or 'None'}")
+    if get_yes_no_input("Update planned date?"):
+        new_date = get_date_input("Enter new planned date or press Enter to clear:")
+        if new_date:
+            updates['planned_date'] = new_date
+    
+    # Notes
+    print(f"Current notes: {task.notes or 'None'}")
+    if get_yes_no_input("Update notes?"):
+        new_notes = input("Enter new notes: ").strip()
+        updates['notes'] = new_notes if new_notes else None
+    
+    # Check if any updates
+    if not updates:
+        print("\n⚠️  No changes made")
+        return
+    
+    # Confirm
+    print("\n" + "-" * 60)
+    print("FIELDS TO UPDATE:")
+    for key, value in updates.items():
+        print(f"  {key}: {value}")
+    print("-" * 60)
+    
+    if not get_yes_no_input("\nApply these updates?"):
+        print("❌ Update cancelled")
+        return
+    
+    # Apply updates
+    updated_task = update_task(task_id, **updates)
+    
+    if updated_task:
+        print("\n✅ Task updated successfully!")
+        display_task(updated_task)
+
+
+def menu_mark_task_completed():
+    """Quick action to mark a task as completed"""
+    print_header("Mark Task as Completed")
+    
+    # Show incomplete tasks
+    incomplete_tasks = get_all_tasks(status='not_started') + get_all_tasks(status='in_progress')
+    
+    if not incomplete_tasks:
+        print("No incomplete tasks found. Great job! 🎉")
+        return
+    
+    print("Incomplete tasks:")
+    for t in incomplete_tasks:
+        critical = "🔴" if t.critical else ""
+        print(f"  ID {t.id}: {t.title} {critical} [{t.status.replace('_', ' ').title()}]")
+    
+    print()
+    
+    # Get task ID
+    try:
+        task_id = int(input("Enter task ID to mark as completed: ").strip())
+    except ValueError:
+        print("❌ Please enter a valid number")
+        return
+    
+    # Get the task
+    task = get_task_by_id(task_id)
+    if not task:
+        print(f"❌ No task found with ID {task_id}")
+        return
+    
+    if task.status == 'completed':
+        print(f"⚠️  This task is already completed on {task.completed_date}")
+        return
+    
+    # Show task
+    display_task(task)
+    
+    # Confirm
+    if not get_yes_no_input("Mark this task as completed?"):
+        print("❌ Cancelled")
+        return
+    
+    # Mark completed
+    updated_task = mark_task_completed(task_id)
+    
+    if updated_task:
+        print("\n✅ Task marked as completed!")
+        display_task(updated_task)
+
+
+def menu_delete_task():
+    """Delete a task"""
+    print_header("Delete Task")
+    
+    # Show all tasks
+    tasks = get_all_tasks()
+    if not tasks:
+        print("No tasks found.")
+        return
+    
+    print("Available tasks:")
+    for t in tasks:
+        status_emoji = {'not_started': '⏸️', 'in_progress': '🔄', 'completed': '✅'}
+        emoji = status_emoji.get(t.status, '❓')
+        print(f"  ID {t.id}: {emoji} {t.title}")
+    
+    print()
+    
+    # Get task ID
+    try:
+        task_id = int(input("Enter task ID to delete: ").strip())
+    except ValueError:
+        print("❌ Please enter a valid number")
+        return
+    
+    # Get and show the task
+    task = get_task_by_id(task_id)
+    if not task:
+        print(f"❌ No task found with ID {task_id}")
+        return
+    
+    print("\nTask to delete:")
+    display_task(task)
+    
+    # Confirm deletion
+    print("⚠️  WARNING: This cannot be undone!")
+    if not get_yes_no_input("Are you sure you want to delete this task?"):
+        print("❌ Deletion cancelled")
+        return
+    
+    # Delete it
+    if delete_task(task_id):
+        print("\n✅ Task deleted successfully")
+    else:
+        print("\n❌ Failed to delete task")
 def show_main_menu():
     """Display the main menu and get user choice"""
     print_header("RELOCATION OS - Main Menu")
@@ -912,13 +1341,18 @@ def show_main_menu():
     print("  7. View all phases")
     print("  8. Update a phase")
     print("  9. Delete a phase")
+    print("\nTASKS:")
+    print("  10. Create new task")
+    print("  11. View all tasks")
+    print("  12. Update a task")
+    print("  13. Mark task as completed ✅")
+    print("  14. Delete a task")
     print("\nOTHER:")
     print("  0. Exit")
     print()
     
-    choice = input("Enter your choice (0-9): ").strip()
+    choice = input("Enter your choice: ").strip()
     return choice
-
 
 def run_menu():
     """Main menu loop"""
@@ -955,12 +1389,24 @@ def run_menu():
         elif choice == '9':
             menu_delete_phase()
         
+        # Task management
+        elif choice == '10':
+            menu_create_task()
+        elif choice == '11':
+            menu_view_all_tasks()
+        elif choice == '12':
+            menu_update_task()
+        elif choice == '13':
+            menu_mark_task_completed()
+        elif choice == '14':
+            menu_delete_task()
+        
         # Exit
         elif choice == '0':
             print("\n👋 Goodbye! Your data is saved.\n")
             break
         else:
-            print("❌ Invalid choice. Please enter 0-9")
+            print("❌ Invalid choice. Please enter a valid option")
         
         # Wait for user to press Enter before showing menu again
         input("\nPress Enter to continue...")
