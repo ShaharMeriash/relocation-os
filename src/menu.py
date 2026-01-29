@@ -8,7 +8,9 @@ from database import (
     create_relocation_profile, 
     get_all_profiles, 
     get_profile_by_id,
-    display_profile
+    display_profile,
+    update_relocation_profile,
+    delete_relocation_profile
 )
 
 
@@ -185,7 +187,176 @@ def menu_view_profile_by_id():
             print(f"❌ No profile found with ID {profile_id}")
     except ValueError:
         print("❌ Please enter a valid number")
+def menu_update_profile():
+    """Update an existing profile"""
+    print_header("Update Relocation Profile")
+    
+    # First, show all profiles so user knows the IDs
+    profiles = get_all_profiles()
+    if not profiles:
+        print("No profiles found. Create one first!")
+        return
+    
+    print("Available profiles:")
+    for p in profiles:
+        print(f"  ID {p.id}: {p.relocation_name} ({p.origin_country} → {p.destination_country})")
+    
+    print()
+    
+    # Get profile ID to update
+    try:
+        profile_id = int(input("Enter profile ID to update: ").strip())
+    except ValueError:
+        print("❌ Please enter a valid number")
+        return
+    
+    # Check if profile exists
+    profile = get_profile_by_id(profile_id)
+    if not profile:
+        print(f"❌ No profile found with ID {profile_id}")
+        return
+    
+    # Show current profile
+    print("\nCurrent profile:")
+    display_profile(profile)
+    
+    # Ask what to update
+    print("What would you like to update? (Press Enter to skip a field)")
+    print("-" * 60)
+    
+    updates = {}
+    
+    # Relocation name
+    new_name = input(f"Relocation name [{profile.relocation_name}]: ").strip()
+    if new_name:
+        updates['relocation_name'] = new_name
+    
+    # Origin country
+    new_origin = input(f"Origin country [{profile.origin_country}]: ").strip()
+    if new_origin:
+        updates['origin_country'] = new_origin
+    
+    # Destination country
+    new_dest = input(f"Destination country [{profile.destination_country}]: ").strip()
+    if new_dest:
+        updates['destination_country'] = new_dest
+    
+    # Target date
+    print(f"Target arrival date [{profile.target_arrival_date}]")
+    new_date = get_date_input("Enter new date or press Enter to skip:")
+    if new_date:
+        updates['target_arrival_date'] = new_date
+    
+    # Family size
+    new_family = input(f"Family size [{profile.family_size}]: ").strip()
+    if new_family:
+        try:
+            updates['family_size'] = int(new_family)
+        except ValueError:
+            print("⚠️  Invalid number for family size, skipping")
+    
+    # Children
+    new_children = input(f"Number of children [{profile.number_of_children}]: ").strip()
+    if new_children:
+        try:
+            updates['number_of_children'] = int(new_children)
+        except ValueError:
+            print("⚠️  Invalid number for children, skipping")
+    
+    # Pets
+    current_pets = "Yes" if profile.pets else "No"
+    if get_yes_no_input(f"Update pets? (currently: {current_pets})"):
+        updates['pets'] = get_yes_no_input("Do you have pets?")
+    
+    # Primary currency
+    new_currency = input(f"Primary currency [{profile.primary_currency}]: ").strip().upper()
+    if new_currency:
+        updates['primary_currency'] = new_currency
+    
+    # Secondary currency
+    current_secondary = profile.secondary_currency or "None"
+    new_secondary = input(f"Secondary currency [{current_secondary}]: ").strip().upper()
+    if new_secondary:
+        updates['secondary_currency'] = new_secondary if new_secondary != "NONE" else None
+    
+    # Notes
+    print(f"Current notes: {profile.notes or 'None'}")
+    if get_yes_no_input("Update notes?"):
+        new_notes = input("Enter new notes: ").strip()
+        updates['notes'] = new_notes if new_notes else None
+    
+    # Check if any updates were made
+    if not updates:
+        print("\n⚠️  No changes made")
+        return
+    
+    # Confirm updates
+    print("\n" + "-" * 60)
+    print("FIELDS TO UPDATE:")
+    for key, value in updates.items():
+        print(f"  {key}: {value}")
+    print("-" * 60)
+    
+    if not get_yes_no_input("\nApply these updates?"):
+        print("❌ Update cancelled")
+        return
+    
+    # Apply updates
+    updated_profile = update_relocation_profile(profile_id, **updates)
+    
+    if updated_profile:
+        print("\n✅ Profile updated successfully!")
+        display_profile(updated_profile)
 
+
+def menu_delete_profile():
+    """Delete a profile"""
+    print_header("Delete Relocation Profile")
+    
+    # Show all profiles
+    profiles = get_all_profiles()
+    if not profiles:
+        print("No profiles found.")
+        return
+    
+    print("Available profiles:")
+    for p in profiles:
+        print(f"  ID {p.id}: {p.relocation_name} ({p.origin_country} → {p.destination_country})")
+    
+    print()
+    
+    # Get profile ID to delete
+    try:
+        profile_id = int(input("Enter profile ID to delete: ").strip())
+    except ValueError:
+        print("❌ Please enter a valid number")
+        return
+    
+    # Get and show the profile
+    profile = get_profile_by_id(profile_id)
+    if not profile:
+        print(f"❌ No profile found with ID {profile_id}")
+        return
+    
+    print("\nProfile to delete:")
+    display_profile(profile)
+    
+    # Confirm deletion
+    print("⚠️  WARNING: This cannot be undone!")
+    if not get_yes_no_input("Are you sure you want to delete this profile?"):
+        print("❌ Deletion cancelled")
+        return
+    
+    # Double confirmation
+    if not get_yes_no_input("Really delete? This is your last chance!"):
+        print("❌ Deletion cancelled")
+        return
+    
+    # Delete it
+    if delete_relocation_profile(profile_id):
+        print("\n✅ Profile deleted successfully")
+    else:
+        print("\n❌ Failed to delete profile")
 
 def show_main_menu():
     """Display the main menu and get user choice"""
@@ -193,10 +364,12 @@ def show_main_menu():
     print("1. Create new relocation profile")
     print("2. View all profiles")
     print("3. View specific profile by ID")
-    print("4. Exit")
+    print("4. Update a profile")
+    print("5. Delete a profile")
+    print("6. Exit")
     print()
     
-    choice = input("Enter your choice (1-4): ").strip()
+    choice = input("Enter your choice (1-6): ").strip()
     return choice
 
 
@@ -220,10 +393,14 @@ def run_menu():
         elif choice == '3':
             menu_view_profile_by_id()
         elif choice == '4':
+            menu_update_profile()
+        elif choice == '5':
+            menu_delete_profile()
+        elif choice == '6':
             print("\n👋 Goodbye! Your data is saved.\n")
             break
         else:
-            print("❌ Invalid choice. Please enter 1-4")
+            print("❌ Invalid choice. Please enter 1-6")
         
         # Wait for user to press Enter before showing menu again
         input("\nPress Enter to continue...")
