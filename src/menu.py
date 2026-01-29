@@ -29,6 +29,17 @@ from task_operations import (
     mark_task_completed,
     display_task
 )
+from expense_operations import (
+    create_expense,
+    get_all_expenses,
+    get_expense_by_id,
+    update_expense,
+    delete_expense,
+    mark_expense_paid,
+    get_budget_summary,
+    display_expense,
+    display_budget_summary
+)
 
 def clear_screen():
     """Clear the terminal screen"""
@@ -83,7 +94,29 @@ def get_yes_no_input(prompt):
             return False
         else:
             print("Please enter 'y' or 'n'")
-
+def get_currency_amount(prompt):
+    """
+    Get a currency amount from user and convert to cents
+    
+    Args:
+        prompt: The message to show the user
+    
+    Returns:
+        Amount in cents (integer) or None if invalid
+    """
+    try:
+        amount_str = input(f"{prompt} (e.g., 123.45): ").strip()
+        if not amount_str:
+            return None
+        
+        # Convert to float, then to cents
+        amount_float = float(amount_str)
+        amount_cents = int(amount_float * 100)
+        
+        return amount_cents
+    except ValueError:
+        print("❌ Invalid amount format")
+        return None
 
 def menu_create_profile():
     """Interactive form to create a new relocation profile"""
@@ -1327,6 +1360,488 @@ def menu_delete_task():
         print("\n✅ Task deleted successfully")
     else:
         print("\n❌ Failed to delete task")
+def menu_create_expense():
+    """Create a new expense"""
+    print_header("Create New Expense")
+    
+    # Get profile
+    profiles = get_all_profiles()
+    if not profiles:
+        print("❌ No profiles found. Create a profile first!")
+        return
+    
+    print("Available profiles:")
+    for p in profiles:
+        print(f"  ID {p.id}: {p.relocation_name}")
+    
+    print()
+    
+    try:
+        profile_id = int(input("Enter profile ID: ").strip())
+    except ValueError:
+        print("❌ Please enter a valid number")
+        return
+    
+    profile = get_profile_by_id(profile_id)
+    if not profile:
+        print(f"❌ No profile found with ID {profile_id}")
+        return
+    
+    # Get phase
+    phases = get_all_phases(relocation_profile_id=profile_id)
+    if not phases:
+        print("❌ No phases found. Create a phase first!")
+        return
+    
+    print(f"\nAvailable phases for '{profile.relocation_name}':")
+    for p in phases:
+        print(f"  ID {p.id}: {p.name}")
+    
+    print()
+    
+    try:
+        phase_id = int(input("Enter phase ID: ").strip())
+    except ValueError:
+        print("❌ Please enter a valid number")
+        return
+    
+    phase = get_phase_by_id(phase_id)
+    if not phase or phase.relocation_profile_id != profile_id:
+        print("❌ Invalid phase ID")
+        return
+    
+    print(f"\nCreating expense for phase: {phase.name}")
+    print("-" * 60)
+    
+    # Get expense details
+    title = input("Expense title (e.g., 'Visa application fee'): ").strip()
+    if not title:
+        print("❌ Title is required!")
+        return
+    
+    category = input("Category (e.g., 'Legal', 'Housing', 'Transportation'): ").strip()
+    if not category:
+        category = None
+    
+    # Currency
+    print(f"\nPrimary currency for profile: {profile.primary_currency}")
+    currency = input(f"Expense currency (or Enter for {profile.primary_currency}): ").strip().upper()
+    if not currency:
+        currency = profile.primary_currency
+    
+    # Estimated amount
+    print("\nEstimated amount:")
+    estimated_amount = get_currency_amount("Enter estimated amount")
+    if estimated_amount is None:
+        print("❌ Estimated amount is required!")
+        return
+    
+    # Actual amount (optional)
+    if get_yes_no_input("\nDo you know the actual amount already?"):
+        actual_amount = get_currency_amount("Enter actual amount")
+    else:
+        actual_amount = None
+    
+    # Cost certainty
+    print("\nCost certainty:")
+    print("  1. Unknown")
+    print("  2. Estimated (default)")
+    print("  3. Confirmed")
+    certainty_choice = input("Choose (1-3, or Enter for default): ").strip()
+    certainty_map = {
+        '1': 'unknown',
+        '2': 'estimated',
+        '3': 'confirmed',
+        '': 'estimated'
+    }
+    cost_certainty = certainty_map.get(certainty_choice, 'estimated')
+    
+    # Payment status
+    payment_status = 'paid' if get_yes_no_input("\nHas this been paid already?") else 'unpaid'
+    
+    # Due date (if unpaid)
+    due_date = None
+    if payment_status == 'unpaid':
+        print("\nPayment due date (optional):")
+        due_date = get_date_input("Enter due date or press Enter to skip:")
+    
+    # Budget flags
+    include_in_budget = get_yes_no_input("\nInclude in budget calculations?")
+    one_time_cost = get_yes_no_input("Is this a one-time relocation cost?")
+    
+    # Related task (optional)
+    if get_yes_no_input("\nLink to a task?"):
+        tasks = get_all_tasks(relocation_profile_id=profile_id)
+        if tasks:
+            print("\nAvailable tasks:")
+            for t in tasks:
+                print(f"  ID {t.id}: {t.title}")
+            try:
+                related_task_id = int(input("\nEnter task ID: ").strip())
+            except ValueError:
+                related_task_id = None
+        else:
+            print("No tasks found")
+            related_task_id = None
+    else:
+        related_task_id = None
+    
+    # Notes
+    notes = input("\nAdditional notes (optional): ").strip()
+    if not notes:
+        notes = None
+    
+    # Confirm
+    print("\n" + "-" * 60)
+    print("REVIEW EXPENSE:")
+    print(f"  Title: {title}")
+    print(f"  Category: {category or 'None'}")
+    print(f"  Phase: {phase.name}")
+    est_display = estimated_amount / 100
+    print(f"  Estimated: {est_display:.2f} {currency}")
+    if actual_amount:
+        act_display = actual_amount / 100
+        print(f"  Actual: {act_display:.2f} {currency}")
+    print(f"  Cost Certainty: {cost_certainty}")
+    print(f"  Payment Status: {payment_status}")
+    if due_date:
+        print(f"  Due Date: {due_date}")
+    print(f"  Include in Budget: {'Yes' if include_in_budget else 'No'}")
+    print(f"  One-time Cost: {'Yes' if one_time_cost else 'No'}")
+    print("-" * 60)
+    
+    if not get_yes_no_input("\nCreate this expense?"):
+        print("❌ Expense creation cancelled")
+        return
+    
+    # Create expense
+    try:
+        expense = create_expense(
+            relocation_profile_id=profile_id,
+            phase_id=phase_id,
+            title=title,
+            category=category,
+            estimated_amount=estimated_amount,
+            actual_amount=actual_amount,
+            currency=currency,
+            cost_certainty=cost_certainty,
+            payment_status=payment_status,
+            include_in_budget=include_in_budget,
+            one_time_relocation_cost=one_time_cost,
+            due_date=due_date,
+            related_task_id=related_task_id,
+            notes=notes
+        )
+        print("\n✅ Expense created successfully!")
+        display_expense(expense)
+    except Exception as e:
+        print(f"\n❌ Error creating expense: {e}")
+
+
+def menu_view_all_expenses():
+    """View all expenses with filtering"""
+    print_header("View Expenses")
+    
+    print("Filter options:")
+    print("  1. View all expenses")
+    print("  2. Filter by profile")
+    print("  3. Filter by phase")
+    print("  4. Filter by payment status")
+    
+    filter_choice = input("\nChoose filter (1-4): ").strip()
+    
+    profile_id = None
+    phase_id = None
+    payment_status = None
+    
+    if filter_choice == '2':
+        profiles = get_all_profiles()
+        if not profiles:
+            print("❌ No profiles found")
+            return
+        
+        print("\nAvailable profiles:")
+        for p in profiles:
+            print(f"  ID {p.id}: {p.relocation_name}")
+        
+        try:
+            profile_id = int(input("\nEnter profile ID: ").strip())
+        except ValueError:
+            print("❌ Invalid profile ID")
+            return
+    
+    elif filter_choice == '3':
+        phases = get_all_phases()
+        if not phases:
+            print("❌ No phases found")
+            return
+        
+        print("\nAvailable phases:")
+        for p in phases:
+            print(f"  ID {p.id}: {p.name}")
+        
+        try:
+            phase_id = int(input("\nEnter phase ID: ").strip())
+        except ValueError:
+            print("❌ Invalid phase ID")
+            return
+    
+    elif filter_choice == '4':
+        print("\nPayment status:")
+        print("  1. Unpaid")
+        print("  2. Paid")
+        
+        status_choice = input("\nChoose (1-2): ").strip()
+        payment_status = 'unpaid' if status_choice == '1' else 'paid'
+    
+    # Get expenses
+    expenses = get_all_expenses(
+        relocation_profile_id=profile_id,
+        phase_id=phase_id,
+        payment_status=payment_status
+    )
+    
+    if not expenses:
+        print("\nNo expenses found.")
+        return
+    
+    print(f"\nTotal expenses: {len(expenses)}\n")
+    
+    for expense in expenses:
+        display_expense(expense)
+
+
+def menu_update_expense():
+    """Update an existing expense"""
+    print_header("Update Expense")
+    
+    expenses = get_all_expenses()
+    if not expenses:
+        print("No expenses found.")
+        return
+    
+    print("Available expenses:")
+    for e in expenses:
+        amount = (e.actual_amount if e.actual_amount else e.estimated_amount) / 100
+        status = "✅" if e.payment_status == 'paid' else "💰"
+        print(f"  ID {e.id}: {status} {e.title} ({amount:.2f} {e.currency})")
+    
+    print()
+    
+    try:
+        expense_id = int(input("Enter expense ID to update: ").strip())
+    except ValueError:
+        print("❌ Please enter a valid number")
+        return
+    
+    expense = get_expense_by_id(expense_id)
+    if not expense:
+        print(f"❌ No expense found with ID {expense_id}")
+        return
+    
+    print("\nCurrent expense:")
+    display_expense(expense)
+    
+    print("What would you like to update? (Press Enter to skip)")
+    print("-" * 60)
+    
+    updates = {}
+    
+    # Title
+    new_title = input(f"Title [{expense.title}]: ").strip()
+    if new_title:
+        updates['title'] = new_title
+    
+    # Category
+    new_category = input(f"Category [{expense.category or 'None'}]: ").strip()
+    if new_category:
+        updates['category'] = new_category
+    
+    # Estimated amount
+    print(f"Current estimated: {expense.estimated_amount/100:.2f} {expense.currency}")
+    if get_yes_no_input("Update estimated amount?"):
+        new_est = get_currency_amount("Enter new estimated amount")
+        if new_est:
+            updates['estimated_amount'] = new_est
+    
+    # Actual amount
+    current_actual = f"{expense.actual_amount/100:.2f}" if expense.actual_amount else "None"
+    print(f"Current actual: {current_actual}")
+    if get_yes_no_input("Update actual amount?"):
+        new_act = get_currency_amount("Enter actual amount (or 0 to clear)")
+        if new_act is not None:
+            updates['actual_amount'] = new_act if new_act > 0 else None
+    
+    # Payment status
+    if expense.payment_status == 'unpaid':
+        if get_yes_no_input(f"\nMark as paid?"):
+            updates['payment_status'] = 'paid'
+    else:
+        if get_yes_no_input(f"\nMark as unpaid?"):
+            updates['payment_status'] = 'unpaid'
+    
+    # Cost certainty
+    print(f"Current cost certainty: {expense.cost_certainty}")
+    if get_yes_no_input("Update cost certainty?"):
+        print("  1. Unknown")
+        print("  2. Estimated")
+        print("  3. Confirmed")
+        cert_choice = input("Choose (1-3): ").strip()
+        cert_map = {'1': 'unknown', '2': 'estimated', '3': 'confirmed'}
+        if cert_choice in cert_map:
+            updates['cost_certainty'] = cert_map[cert_choice]
+    
+    # Due date
+    if get_yes_no_input(f"\nUpdate due date? (current: {expense.due_date or 'None'})"):
+        new_due = get_date_input("Enter new due date:")
+        if new_due:
+            updates['due_date'] = new_due
+    
+    # Notes
+    if get_yes_no_input("\nUpdate notes?"):
+        new_notes = input("Enter new notes: ").strip()
+        updates['notes'] = new_notes if new_notes else None
+    
+    if not updates:
+        print("\n⚠️  No changes made")
+        return
+    
+    # Confirm
+    print("\n" + "-" * 60)
+    print("FIELDS TO UPDATE:")
+    for key, value in updates.items():
+        if key in ['estimated_amount', 'actual_amount'] and value:
+            print(f"  {key}: {value/100:.2f}")
+        else:
+            print(f"  {key}: {value}")
+    print("-" * 60)
+    
+    if not get_yes_no_input("\nApply these updates?"):
+        print("❌ Update cancelled")
+        return
+    
+    updated_expense = update_expense(expense_id, **updates)
+    
+    if updated_expense:
+        print("\n✅ Expense updated successfully!")
+        display_expense(updated_expense)
+
+
+def menu_mark_expense_paid():
+    """Quick action to mark expense as paid"""
+    print_header("Mark Expense as Paid")
+    
+    unpaid = get_all_expenses(payment_status='unpaid')
+    
+    if not unpaid:
+        print("No unpaid expenses. Great! 🎉")
+        return
+    
+    print("Unpaid expenses:")
+    for e in unpaid:
+        amount = (e.actual_amount if e.actual_amount else e.estimated_amount) / 100
+        overdue = " ⚠️ OVERDUE" if e.is_overdue else ""
+        print(f"  ID {e.id}: {e.title} ({amount:.2f} {e.currency}){overdue}")
+    
+    print()
+    
+    try:
+        expense_id = int(input("Enter expense ID to mark as paid: ").strip())
+    except ValueError:
+        print("❌ Please enter a valid number")
+        return
+    
+    expense = get_expense_by_id(expense_id)
+    if not expense:
+        print(f"❌ No expense found with ID {expense_id}")
+        return
+    
+    if expense.payment_status == 'paid':
+        print("⚠️  This expense is already marked as paid")
+        return
+    
+    display_expense(expense)
+    
+    if not get_yes_no_input("Mark this expense as paid?"):
+        print("❌ Cancelled")
+        return
+    
+    updated = mark_expense_paid(expense_id)
+    
+    if updated:
+        print("\n✅ Expense marked as paid!")
+        display_expense(updated)
+
+
+def menu_delete_expense():
+    """Delete an expense"""
+    print_header("Delete Expense")
+    
+    expenses = get_all_expenses()
+    if not expenses:
+        print("No expenses found.")
+        return
+    
+    print("Available expenses:")
+    for e in expenses:
+        amount = (e.actual_amount if e.actual_amount else e.estimated_amount) / 100
+        print(f"  ID {e.id}: {e.title} ({amount:.2f} {e.currency})")
+    
+    print()
+    
+    try:
+        expense_id = int(input("Enter expense ID to delete: ").strip())
+    except ValueError:
+        print("❌ Please enter a valid number")
+        return
+    
+    expense = get_expense_by_id(expense_id)
+    if not expense:
+        print(f"❌ No expense found with ID {expense_id}")
+        return
+    
+    print("\nExpense to delete:")
+    display_expense(expense)
+    
+    print("⚠️  WARNING: This cannot be undone!")
+    if not get_yes_no_input("Are you sure you want to delete this expense?"):
+        print("❌ Deletion cancelled")
+        return
+    
+    if delete_expense(expense_id):
+        print("\n✅ Expense deleted successfully")
+    else:
+        print("\n❌ Failed to delete expense")
+
+
+def menu_view_budget_summary():
+    """View budget summary for a profile"""
+    print_header("Budget Summary")
+    
+    profiles = get_all_profiles()
+    if not profiles:
+        print("❌ No profiles found")
+        return
+    
+    print("Available profiles:")
+    for p in profiles:
+        print(f"  ID {p.id}: {p.relocation_name}")
+    
+    print()
+    
+    try:
+        profile_id = int(input("Enter profile ID: ").strip())
+    except ValueError:
+        print("❌ Please enter a valid number")
+        return
+    
+    profile = get_profile_by_id(profile_id)
+    if not profile:
+        print(f"❌ No profile found with ID {profile_id}")
+        return
+    
+    summary = get_budget_summary(profile_id)
+    display_budget_summary(summary)
 def show_main_menu():
     """Display the main menu and get user choice"""
     print_header("RELOCATION OS - Main Menu")
@@ -1347,6 +1862,13 @@ def show_main_menu():
     print("  12. Update a task")
     print("  13. Mark task as completed ✅")
     print("  14. Delete a task")
+    print("\nEXPENSES:")
+    print("  15. Create new expense")
+    print("  16. View all expenses")
+    print("  17. Update an expense")
+    print("  18. Mark expense as paid 💰")
+    print("  19. Delete an expense")
+    print("  20. View budget summary 📊")
     print("\nOTHER:")
     print("  0. Exit")
     print()
@@ -1401,6 +1923,20 @@ def run_menu():
         elif choice == '14':
             menu_delete_task()
         
+        # Expense management
+        elif choice == '15':
+            menu_create_expense()
+        elif choice == '16':
+            menu_view_all_expenses()
+        elif choice == '17':
+            menu_update_expense()
+        elif choice == '18':
+            menu_mark_expense_paid()
+        elif choice == '19':
+            menu_delete_expense()
+        elif choice == '20':
+            menu_view_budget_summary()
+            
         # Exit
         elif choice == '0':
             print("\n👋 Goodbye! Your data is saved.\n")

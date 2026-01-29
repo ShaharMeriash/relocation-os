@@ -49,6 +49,8 @@ class RelocationProfile(Base):
         Helpful for debugging - shows you what's in the object
         """
         return f"<RelocationProfile(name='{self.relocation_name}', {self.origin_country} → {self.destination_country})>"
+    # Relationship - all expenses for this profile
+    expenses = relationship("Expense", back_populates="relocation_profile", cascade="all, delete-orphan")
 class RelocationPhase(Base):
     """
     Represents a phase/stage in the relocation timeline
@@ -76,6 +78,8 @@ class RelocationPhase(Base):
     def __repr__(self):
         """String representation for debugging"""
         return f"<RelocationPhase(name='{self.name}', months={self.relative_start_month} to {self.relative_end_month})>"
+    # Relationship - expenses in this phase
+    expenses = relationship("Expense", back_populates="phase", cascade="all, delete-orphan")
 class Task(Base):
     """
     Represents a task/action item in the relocation process
@@ -110,7 +114,80 @@ class Task(Base):
     def __repr__(self):
         """String representation for debugging"""
         return f"<Task(title='{self.title}', status='{self.status}', critical={self.critical})>"
-# Database setup functions
+    # Database setup functions
+    # Relationship - expenses related to this task
+    expenses = relationship("Expense", back_populates="related_task")
+class Expense(Base):
+    """
+    Represents an expense/cost in the relocation process
+    Tracks estimated vs actual costs with multi-currency support
+    """
+    __tablename__ = 'expenses'
+    
+    # Primary key
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    
+    # Identity
+    title = Column(String(200), nullable=False)
+    category = Column(String(100), nullable=True)  # e.g., "Housing", "Transportation", "Legal"
+    
+    # Cost information
+    estimated_amount = Column(Integer, default=0)  # Store as cents/smallest unit
+    actual_amount = Column(Integer, nullable=True)  # Store as cents/smallest unit
+    currency = Column(String(3), default='USD')  # 3-letter currency code
+    exchange_rate = Column(Integer, nullable=True)  # Rate to primary currency (stored as cents)
+    
+    # State
+    cost_certainty = Column(String(20), default='estimated')  # unknown, estimated, confirmed
+    payment_status = Column(String(20), default='unpaid')  # unpaid, paid
+    
+    # Budget flags
+    include_in_budget = Column(Boolean, default=True)
+    one_time_relocation_cost = Column(Boolean, default=True)
+    
+    # Dates
+    due_date = Column(Date, nullable=True)
+    
+    # Notes
+    notes = Column(Text, nullable=True)
+    
+    # Foreign keys
+    phase_id = Column(Integer, ForeignKey('relocation_phases.id'), nullable=False)
+    relocation_profile_id = Column(Integer, ForeignKey('relocation_profiles.id'), nullable=False)
+    related_task_id = Column(Integer, ForeignKey('tasks.id'), nullable=True)  # Optional link to task
+    
+    # Relationships
+    phase = relationship("RelocationPhase", back_populates="expenses")
+    relocation_profile = relationship("RelocationProfile", back_populates="expenses")
+    related_task = relationship("Task", back_populates="expenses")
+    
+    def __repr__(self):
+        """String representation for debugging"""
+        amount = self.actual_amount if self.actual_amount else self.estimated_amount
+        return f"<Expense(title='{self.title}', amount={amount/100:.2f} {self.currency}, status='{self.payment_status}')>"
+    
+    @property
+    def total_primary_currency(self):
+        """Calculate total in primary currency using exchange rate"""
+        amount = self.actual_amount if self.actual_amount else self.estimated_amount
+        if self.exchange_rate:
+            return (amount * self.exchange_rate) / 10000  # Divide by 10000 because both are in cents
+        return amount / 100  # If no exchange rate, assume same currency
+    
+    @property
+    def variance(self):
+        """Calculate variance between estimated and actual"""
+        if self.actual_amount is None:
+            return None
+        return (self.actual_amount - self.estimated_amount) / 100
+    
+    @property
+    def is_overdue(self):
+        """Check if expense is overdue"""
+        if not self.due_date or self.payment_status == 'paid':
+            return False
+        from datetime import date
+        return date.today() > self.due_date
 def get_engine(db_path=None):
     """
     Creates a connection to the database
