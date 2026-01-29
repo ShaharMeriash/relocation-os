@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 """
 Relocation OS - Main Entry Point
-A system to manage international relocations
 """
 
+import sys
+from pathlib import Path
+
+# Add the src directory to Python's path
+src_path = Path(__file__).parent
+sys.path.insert(0, str(src_path))
+
+from menu import run_menu
+
+
 def main():
-    """Main function to run the application"""
-    print("=" * 50)
-    print("Welcome to Relocation OS!")
-    print("=" * 50)
-    print("\nYour relocation management system is starting...")
-    print("✓ Python is working")
-    print("✓ Project structure is set up")
-    print("✓ Ready to build!\n")
+    """Main function - launches the interactive menu"""
+    run_menu()
+
 
 if __name__ == "__main__":
     main()

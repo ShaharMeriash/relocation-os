@@ -1,0 +1,11 @@
+README.md
+setup.py
+relocation_os.egg-info/PKG-INFO
+relocation_os.egg-info/SOURCES.txt
+relocation_os.egg-info/dependency_links.txt
+relocation_os.egg-info/top_level.txt
+src/__init__.py
+src/main.py
+src/models.py
+src/setup.py
+tests/__init__.py
