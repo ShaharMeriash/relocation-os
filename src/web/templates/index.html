@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Relocation OS{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-speedometer2"></i> Dashboard</h1>
+        <p class="text-muted">Overview of your relocations</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('profile_create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> New Profile
+        </a>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card primary">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Total Profiles</h6>
+                <h2 class="card-title">{{ total_profiles }}</h2>
+                <a href="{{ url_for('profiles_list') }}" class="card-link">View all <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card warning">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Total Tasks</h6>
+                <h2 class="card-title">{{ total_tasks }}</h2>
+                <a href="{{ url_for('tasks_list') }}" class="card-link">View all <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card success">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Total Expenses</h6>
+                <h2 class="card-title">{{ total_expenses }}</h2>
+                <a href="{{ url_for('expenses_list') }}" class="card-link">View all <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card danger">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Unpaid Expenses</h6>
+                <h2 class="card-title">{{ unpaid_expenses|length }}</h2>
+                <a href="{{ url_for('expenses_list', payment_status='unpaid') }}" class="card-link">View all <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Active Profiles -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-person-vcard"></i> Active Profiles</h5>
+            </div>
+            <div class="card-body">
+                {% if profiles %}
+                    <div class="list-group">
+                        {% for profile in profiles %}
+                            <a href="{{ url_for('profile_detail', profile_id=profile.id) }}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ profile.relocation_name }}</h6>
+                                    <small class="text-muted">{{ profile.target_arrival_date|date_format }}</small>
+                                </div>
+                                <p class="mb-1">
+                                    <i class="bi bi-geo-alt"></i> {{ profile.origin_country }} → {{ profile.destination_country }}
+                                </p>
+                                <small class="text-muted">
+                                    <i class="bi bi-people"></i> {{ profile.family_size }} people
+                                    {% if profile.pets %}
+                                        <i class="bi bi-emoji-smile ms-2"></i> Has pets
+                                    {% endif %}
+                                </small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center my-4">No profiles yet. Create your first one!</p>
+                    <div class="text-center">
+                        <a href="{{ url_for('profile_create') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Create Profile
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Tasks -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> Pending Tasks</h5>
+            </div>
+            <div class="card-body">
+                {% if incomplete_tasks %}
+                    <div class="list-group">
+                        {% for task in incomplete_tasks %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            {% if task.critical %}
+                                                <span class="badge bg-danger">Critical</span>
+                                            {% endif %}
+                                            {{ task.title }}
+                                        </h6>
+                                        <small class="text-muted">
+                                            {% if task.status == 'not_started' %}
+                                                <span class="badge bg-secondary">Not Started</span>
+                                            {% elif task.status == 'in_progress' %}
+                                                <span class="badge bg-info">In Progress</span>
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    <form action="{{ url_for('task_complete', task_id=task.id) }}" method="POST" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-success" title="Mark as completed">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if incomplete_tasks|length >= 5 %}
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('tasks_list') }}" class="btn btn-sm btn-outline-primary">View All Tasks</a>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted text-center my-4">No pending tasks. Great job! 🎉</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Unpaid Expenses -->
+{% if unpaid_expenses %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle-fill text-warning"></i> Unpaid Expenses</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Amount</th>
+                                <th>Due Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for expense in unpaid_expenses %}
+                                <tr {% if expense.is_overdue %}class="table-danger"{% endif %}>
+                                    <td>
+                                        {{ expense.title }}
+                                        {% if expense.is_overdue %}
+                                            <span class="badge bg-danger">Overdue</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ (expense.actual_amount if expense.actual_amount else expense.estimated_amount)|currency(expense.currency) }}</td>
+                                    <td>{{ expense.due_date|date_format }}</td>
+                                    <td>
+                                        <form action="{{ url_for('expense_pay', expense_id=expense.id) }}" method="POST" style="display: inline;">
+                                            <button type="submit" class="btn btn-sm btn-success">
+                                                <i class="bi bi-check-lg"></i> Mark Paid
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if unpaid_expenses|length >= 5 %}
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('expenses_list', payment_status='unpaid') }}" class="btn btn-sm btn-outline-primary">View All Unpaid Expenses</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

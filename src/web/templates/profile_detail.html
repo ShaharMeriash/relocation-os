@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}{{ profile.relocation_name }} - Relocation OS{% endblock %}
+
+{% block content %}
+<!-- Profile Header -->
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('profiles_list') }}">Profiles</a></li>
+                <li class="breadcrumb-item active">{{ profile.relocation_name }}</li>
+            </ol>
+        </nav>
+        <h1><i class="bi bi-person-vcard"></i> {{ profile.relocation_name }}</h1>
+        <p class="lead">
+            <i class="bi bi-geo-alt"></i> {{ profile.origin_country }} → {{ profile.destination_country }}
+        </p>
+    </div>
+    <div class="col-auto">
+        <form action="{{ url_for('profile_delete', profile_id=profile.id) }}" method="POST" 
+              onsubmit="return confirm('Are you sure? This will delete all phases, tasks, and expenses!');">
+            <button type="submit" class="btn btn-outline-danger">
+                <i class="bi bi-trash"></i> Delete Profile
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Profile Info Card -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <h6 class="text-muted">Target Arrival</h6>
+                        <p><i class="bi bi-calendar-event"></i> {{ profile.target_arrival_date|date_format }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h6 class="text-muted">Family</h6>
+                        <p><i class="bi bi-people"></i> {{ profile.family_size }} people
+                            {% if profile.number_of_children > 0 %}
+                                ({{ profile.number_of_children }} children)
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-3">
+                        <h6 class="text-muted">Currency</h6>
+                        <p><i class="bi bi-currency-exchange"></i> {{ profile.primary_currency }}
+                            {% if profile.secondary_currency %}/ {{ profile.secondary_currency }}{% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-3">
+                        <h6 class="text-muted">Pets</h6>
+                        <p>{% if profile.pets %}✅ Yes{% else %}❌ No{% endif %}</p>
+                    </div>
+                </div>
+                {% if profile.notes %}
+                    <hr>
+                    <h6 class="text-muted">Notes</h6>
+                    <p>{{ profile.notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Budget Summary -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-wallet2"></i> Budget Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h6 class="text-muted">Total Estimated</h6>
+                        <h3>${{ "%.2f"|format(budget_summary.total_estimated) }}</h3>
+                    </div>
+                    <div class="col-md-3">
+                        <h6 class="text-muted">Total Paid</h6>
+                        <h3 class="text-success">${{ "%.2f"|format(budget_summary.total_paid) }}</h3>
+                    </div>
+                    <div class="col-md-3">
+                        <h6 class="text-muted">Remaining</h6>
+                        <h3 class="text-warning">${{ "%.2f"|format(budget_summary.remaining) }}</h3>
+                    </div>
+                    <div class="col-md-3">
+                        <h6 class="text-muted">Progress</h6>
+                        <h3>{{ "%.1f"|format(budget_summary.budget_progress_pct) }}%</h3>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: {{ budget_summary.budget_progress_pct }}%">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if budget_summary.overdue_count > 0 or budget_summary.unknown_count > 0 or budget_summary.over_budget_count > 0 %}
+                    <hr>
+                    <div class="alert alert-warning mb-0">
+                        <h6><i class="bi bi-exclamation-triangle"></i> Warnings:</h6>
+                        <ul class="mb-0">
+                            {% if budget_summary.overdue_count > 0 %}
+                                <li>{{ budget_summary.overdue_count }} overdue unpaid expense(s)</li>
+                            {% endif %}
+                            {% if budget_summary.unknown_count > 0 %}
+                                <li>{{ budget_summary.unknown_count }} expense(s) with unknown cost</li>
+                            {% endif %}
+                            {% if budget_summary.over_budget_count > 0 %}
+                                <li>{{ budget_summary.over_budget_count }} over-budget expense(s)</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Phases -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-calendar-range"></i> Phases ({{ phases|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% if phases %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Order</th>
+                                    <th>Phase Name</th>
+                                    <th>Timeline</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for phase in phases %}
+                                    <tr>
+                                        <td><span class="badge bg-primary">{{ phase.order_index }}</span></td>
+                                        <td><strong>{{ phase.name }}</strong></td>
+                                        <td>Month {{ phase.relative_start_month }} to {{ phase.relative_end_month }}</td>
+                                        <td>{{ phase.description or '-' }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center my-4">No phases defined yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tasks -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> Tasks ({{ tasks|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% if tasks %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Task</th>
+                                    <th>Status</th>
+                                    <th>Planned Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for task in tasks %}
+                                    <tr>
+                                        <td>
+                                            {% if task.critical %}
+                                                <span class="badge bg-danger">Critical</span>
+                                            {% endif %}
+                                            {{ task.title }}
+                                        </td>
+                                        <td>
+                                            {% if task.status == 'not_started' %}
+                                                <span class="badge bg-secondary">Not Started</span>
+                                            {% elif task.status == 'in_progress' %}
+                                                <span class="badge bg-info">In Progress</span>
+                                            {% elif task.status == 'completed' %}
+                                                <span class="badge bg-success">✅ Completed</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ task.planned_date|date_format }}</td>
+                                        <td>
+                                            {% if task.status != 'completed' %}
+                                                <form action="{{ url_for('task_complete', task_id=task.id) }}" method="POST" style="display: inline;">
+                                                    <button type="submit" class="btn btn-sm btn-success">
+                                                        <i class="bi bi-check-lg"></i>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                            <form action="{{ url_for('task_delete', task_id=task.id) }}" method="POST" style="display: inline;"
+                                                  onsubmit="return confirm('Delete this task?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center my-4">No tasks yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Expenses -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-cash-stack"></i> Expenses ({{ expenses|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% if expenses %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Category</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Due Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for expense in expenses %}
+                                    <tr {% if expense.is_overdue %}class="table-danger"{% endif %}>
+                                        <td>
+                                            {{ expense.title }}
+                                            {% if expense.is_overdue %}
+                                                <span class="badge bg-danger">Overdue</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ expense.category or '-' }}</td>
+                                        <td>{{ (expense.actual_amount if expense.actual_amount else expense.estimated_amount)|currency(expense.currency) }}</td>
+                                        <td>
+                                            {% if expense.payment_status == 'paid' %}
+                                                <span class="badge bg-success">✅ Paid</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">💰 Unpaid</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ expense.due_date|date_format }}</td>
+                                        <td>
+                                            {% if expense.payment_status != 'paid' %}
+                                                <form action="{{ url_for('expense_pay', expense_id=expense.id) }}" method="POST" style="display: inline;">
+                                                    <button type="submit" class="btn btn-sm btn-success">
+                                                        <i class="bi bi-check-lg"></i>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                            <form action="{{ url_for('expense_delete', expense_id=expense.id) }}" method="POST" style="display: inline;"
+                                                  onsubmit="return confirm('Delete this expense?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center my-4">No expenses yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

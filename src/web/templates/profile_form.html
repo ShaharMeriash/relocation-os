@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}{% if profile %}Edit{% else %}Create{% endif %} Profile - Relocation OS{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-person-vcard"></i> 
+                    {% if profile %}Edit Profile{% else %}Create New Profile{% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="relocation_name" class="form-label">Relocation Name *</label>
+                            <input type="text" class="form-control" id="relocation_name" name="relocation_name" 
+                                   value="{{ profile.relocation_name if profile else '' }}" required
+                                   placeholder="e.g., Moving to Portugal">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="origin_country" class="form-label">Origin Country *</label>
+                            <input type="text" class="form-control" id="origin_country" name="origin_country" 
+                                   value="{{ profile.origin_country if profile else '' }}" required
+                                   placeholder="e.g., United States">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="destination_country" class="form-label">Destination Country *</label>
+                            <input type="text" class="form-control" id="destination_country" name="destination_country" 
+                                   value="{{ profile.destination_country if profile else '' }}" required
+                                   placeholder="e.g., Portugal">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="target_arrival_date" class="form-label">Target Arrival Date *</label>
+                            <input type="date" class="form-control" id="target_arrival_date" name="target_arrival_date" 
+                                   value="{{ profile.target_arrival_date if profile else '' }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="family_size" class="form-label">Family Size</label>
+                            <input type="number" class="form-control" id="family_size" name="family_size" 
+                                   value="{{ profile.family_size if profile else '1' }}" min="1">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="number_of_children" class="form-label">Number of Children</label>
+                            <input type="number" class="form-control" id="number_of_children" name="number_of_children" 
+                                   value="{{ profile.number_of_children if profile else '0' }}" min="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check mt-4 pt-2">
+                                <input class="form-check-input" type="checkbox" id="pets" name="pets"
+                                       {% if profile and profile.pets %}checked{% endif %}>
+                                <label class="form-check-label" for="pets">
+                                    Has Pets
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="primary_currency" class="form-label">Primary Currency</label>
+                            <select class="form-select" id="primary_currency" name="primary_currency">
+                                <option value="USD" {% if not profile or profile.primary_currency == 'USD' %}selected{% endif %}>USD - US Dollar</option>
+                                <option value="EUR" {% if profile and profile.primary_currency == 'EUR' %}selected{% endif %}>EUR - Euro</option>
+                                <option value="GBP" {% if profile and profile.primary_currency == 'GBP' %}selected{% endif %}>GBP - British Pound</option>
+                                <option value="CAD" {% if profile and profile.primary_currency == 'CAD' %}selected{% endif %}>CAD - Canadian Dollar</option>
+                                <option value="AUD" {% if profile and profile.primary_currency == 'AUD' %}selected{% endif %}>AUD - Australian Dollar</option>
+                                <option value="JPY" {% if profile and profile.primary_currency == 'JPY' %}selected{% endif %}>JPY - Japanese Yen</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="secondary_currency" class="form-label">Secondary Currency (Optional)</label>
+                            <select class="form-select" id="secondary_currency" name="secondary_currency">
+                                <option value="">None</option>
+                                <option value="USD" {% if profile and profile.secondary_currency == 'USD' %}selected{% endif %}>USD - US Dollar</option>
+                                <option value="EUR" {% if profile and profile.secondary_currency == 'EUR' %}selected{% endif %}>EUR - Euro</option>
+                                <option value="GBP" {% if profile and profile.secondary_currency == 'GBP' %}selected{% endif %}>GBP - British Pound</option>
+                                <option value="CAD" {% if profile and profile.secondary_currency == 'CAD' %}selected{% endif %}>CAD - Canadian Dollar</option>
+                                <option value="AUD" {% if profile and profile.secondary_currency == 'AUD' %}selected{% endif %}>AUD - Australian Dollar</option>
+                                <option value="JPY" {% if profile and profile.secondary_currency == 'JPY' %}selected{% endif %}>JPY - Japanese Yen</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                  placeholder="Any additional information...">{{ profile.notes if profile else '' }}</textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('profiles_list') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> {% if profile %}Update{% else %}Create{% endif %} Profile
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

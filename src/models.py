@@ -194,22 +194,34 @@ def get_engine(db_path=None):
     If the database doesn't exist, it will be created
     """
     if db_path is None:
-        # Get the absolute path to the project root
         import os
         from pathlib import Path
         
-        # Get the directory where this file (models.py) is located
-        current_file = Path(__file__)
-        src_dir = current_file.parent
-        project_root = src_dir.parent
+        # Get absolute path to project root
+        # Find the relocation-os directory
+        current_file = Path(__file__).resolve()
+        
+        # Navigate up until we find the project root
+        project_root = current_file.parent
+        while project_root.name != 'relocation-os' and project_root.parent != project_root:
+            project_root = project_root.parent
+        
+        if project_root.name != 'relocation-os':
+            # Fallback: use current working directory
+            project_root = Path.cwd()
+            while project_root.name != 'relocation-os' and project_root.parent != project_root:
+                project_root = project_root.parent
+        
         data_dir = project_root / 'data'
         
         # Create data directory if it doesn't exist
         data_dir.mkdir(exist_ok=True)
         
         db_path = data_dir / 'relocation.db'
+        
+        print(f"✓ Database path: {db_path}")
     
-    return create_engine(f'sqlite:///{db_path}', echo=True)
+    return create_engine(f'sqlite:///{db_path}', echo=False)  # Changed echo to False for cleaner output
 
 
 def init_database(db_path='data/relocation.db'):
