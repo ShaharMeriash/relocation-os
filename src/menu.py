@@ -40,6 +40,7 @@ from expense_operations import (
     display_expense,
     display_budget_summary
 )
+from currency_service import get_exchange_rate, get_manual_exchange_rate, format_currency
 
 def clear_screen():
     """Clear the terminal screen"""
@@ -1429,6 +1430,20 @@ def menu_create_expense():
     if not currency:
         currency = profile.primary_currency
     
+    # Get exchange rate if different currency
+    exchange_rate = None
+    if currency != profile.primary_currency:
+        print(f"\nFetching exchange rate from {currency} to {profile.primary_currency}...")
+        exchange_rate = get_exchange_rate(currency, profile.primary_currency)
+        
+        if exchange_rate is None:
+            # API failed, offer manual entry
+            exchange_rate = get_manual_exchange_rate()
+            
+        if exchange_rate:
+            rate_display = exchange_rate / 10000
+            print(f"  Using rate: 1 {currency} = {rate_display:.4f} {profile.primary_currency}")
+    
     # Estimated amount
     print("\nEstimated amount:")
     estimated_amount = get_currency_amount("Enter estimated amount")
@@ -1524,6 +1539,7 @@ def menu_create_expense():
             estimated_amount=estimated_amount,
             actual_amount=actual_amount,
             currency=currency,
+            exchange_rate=exchange_rate,
             cost_certainty=cost_certainty,
             payment_status=payment_status,
             include_in_budget=include_in_budget,
@@ -1936,7 +1952,7 @@ def run_menu():
             menu_delete_expense()
         elif choice == '20':
             menu_view_budget_summary()
-            
+
         # Exit
         elif choice == '0':
             print("\n👋 Goodbye! Your data is saved.\n")
