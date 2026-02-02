@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}{% if expense %}Edit{% else %}Create{% endif %} Expense - {{ profile.relocation_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-10 offset-md-1">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('profiles_list') }}">Profiles</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('profile_detail', profile_id=profile.id) }}">{{ profile.relocation_name }}</a></li>
+                <li class="breadcrumb-item active">{% if expense %}Edit{% else %}New{% endif %} Expense</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header bg-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-cash-stack"></i> {% if expense %}Edit Expense{% else %}Create New Expense{% endif %}
+                </h4>
+                <small class="text-muted">for {{ profile.relocation_name }}</small>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="title" class="form-label">Expense Title *</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   value="{{ expense.title if expense else '' }}" required
+                                   placeholder="e.g., Visa application fee">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="category" class="form-label">Category</label>
+                            <input type="text" class="form-control" id="category" name="category"
+                                   value="{{ expense.category if expense else '' }}"
+                                   placeholder="e.g., Legal, Housing">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="phase_id" class="form-label">Phase *</label>
+                        <select class="form-select" id="phase_id" name="phase_id" required>
+                            <option value="">Select a phase...</option>
+                            {% for phase in phases %}
+                                <option value="{{ phase.id }}"
+                                        {% if expense and expense.phase_id == phase.id %}selected{% endif %}>
+                                    {{ phase.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="estimated_amount" class="form-label">Estimated Amount *</label>
+                            <div class="input-group">
+                                <input type="number" step="0.01" class="form-control" id="estimated_amount" 
+                                       name="estimated_amount" required
+                                       value="{{ (expense.estimated_amount / 100)|round(2) if expense else '' }}"
+                                       placeholder="123.45">
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="actual_amount" class="form-label">Actual Amount (Optional)</label>
+                            <div class="input-group">
+                                <input type="number" step="0.01" class="form-control" id="actual_amount" 
+                                       name="actual_amount"
+                                       value="{{ (expense.actual_amount / 100)|round(2) if expense and expense.actual_amount else '' }}"
+                                       placeholder="125.00">
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="currency" class="form-label">Currency</label>
+                            <select class="form-select" id="currency" name="currency">
+                                <option value="{{ profile.primary_currency }}" selected>{{ profile.primary_currency }} (Primary)</option>
+                                <option value="USD" {% if expense and expense.currency == 'USD' %}selected{% endif %}>USD - US Dollar</option>
+                                <option value="EUR" {% if expense and expense.currency == 'EUR' %}selected{% endif %}>EUR - Euro</option>
+                                <option value="GBP" {% if expense and expense.currency == 'GBP' %}selected{% endif %}>GBP - British Pound</option>
+                                <option value="CAD" {% if expense and expense.currency == 'CAD' %}selected{% endif %}>CAD - Canadian Dollar</option>
+                                <option value="AUD" {% if expense and expense.currency == 'AUD' %}selected{% endif %}>AUD - Australian Dollar</option>
+                                <option value="JPY" {% if expense and expense.currency == 'JPY' %}selected{% endif %}>JPY - Japanese Yen</option>
+                            </select>
+                            <small class="form-text text-muted">Exchange rates will be fetched automatically</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="cost_certainty" class="form-label">Cost Certainty</label>
+                            <select class="form-select" id="cost_certainty" name="cost_certainty">
+                                <option value="unknown" {% if expense and expense.cost_certainty == 'unknown' %}selected{% endif %}>
+                                    ❓ Unknown
+                                </option>
+                                <option value="estimated" {% if not expense or expense.cost_certainty == 'estimated' %}selected{% endif %}>
+                                    📊 Estimated
+                                </option>
+                                <option value="confirmed" {% if expense and expense.cost_certainty == 'confirmed' %}selected{% endif %}>
+                                    ✓ Confirmed
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="payment_status" class="form-label">Payment Status</label>
+                            <select class="form-select" id="payment_status" name="payment_status">
+                                <option value="unpaid" {% if not expense or expense.payment_status == 'unpaid' %}selected{% endif %}>
+                                    💰 Unpaid
+                                </option>
+                                <option value="paid" {% if expense and expense.payment_status == 'paid' %}selected{% endif %}>
+                                    ✅ Paid
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="due_date" class="form-label">Due Date (Optional)</label>
+                            <input type="date" class="form-control" id="due_date" name="due_date"
+                                   value="{{ expense.due_date if expense else '' }}">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="include_in_budget" 
+                                       name="include_in_budget"
+                                       {% if not expense or expense.include_in_budget %}checked{% endif %}>
+                                <label class="form-check-label" for="include_in_budget">
+                                    Include in Budget Calculations
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="one_time_relocation_cost" 
+                                       name="one_time_relocation_cost"
+                                       {% if not expense or expense.one_time_relocation_cost %}checked{% endif %}>
+                                <label class="form-check-label" for="one_time_relocation_cost">
+                                    One-time Relocation Cost
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if tasks %}
+                        <div class="mb-3">
+                            <label for="related_task_id" class="form-label">Related Task (Optional)</label>
+                            <select class="form-select" id="related_task_id" name="related_task_id">
+                                <option value="">None</option>
+                                {% for task in tasks %}
+                                    <option value="{{ task.id }}"
+                                            {% if expense and expense.related_task_id == task.id %}selected{% endif %}>
+                                        {{ task.title }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2"
+                                  placeholder="Additional notes...">{{ expense.notes if expense else '' }}</textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('profile_detail', profile_id=profile.id) }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> {% if expense %}Update{% else %}Create{% endif %} Expense
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

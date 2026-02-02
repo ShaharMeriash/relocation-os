@@ -92,7 +92,7 @@
                         <h3>{{ "%.1f"|format(budget_summary.budget_progress_pct) }}%</h3>
                         <div class="progress">
                             <div class="progress-bar" role="progressbar" 
-                                 style="width: {{ budget_summary.budget_progress_pct }}%">
+                                style="width: {{ budget_summary.budget_progress_pct }}%">
                             </div>
                         </div>
                     </div>
@@ -125,8 +125,13 @@
     <div class="col-md-12">
         <div class="card">
             <div class="card-header bg-white">
-                <h5 class="mb-0"><i class="bi bi-calendar-range"></i> Phases ({{ phases|length }})</h5>
-            </div>
+    <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-calendar-range"></i> Phases ({{ phases|length }})</h5>
+        <a href="{{ url_for('phase_create', profile_id=profile.id) }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus-circle"></i> Add Phase
+        </a>
+    </div>
+</div>
             <div class="card-body">
                 {% if phases %}
                     <div class="table-responsive">
@@ -163,9 +168,14 @@
 <div class="row mb-4">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header bg-white">
-                <h5 class="mb-0"><i class="bi bi-list-check"></i> Tasks ({{ tasks|length }})</h5>
-            </div>
+           <div class="card-header bg-white">
+    <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-list-check"></i> Tasks ({{ tasks|length }})</h5>
+        <a href="{{ url_for('task_create', profile_id=profile.id) }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus-circle"></i> Add Task
+        </a>
+    </div>
+</div>
             <div class="card-body">
                 {% if tasks %}
                     <div class="table-responsive">
@@ -230,8 +240,13 @@
     <div class="col-md-12">
         <div class="card">
             <div class="card-header bg-white">
-                <h5 class="mb-0"><i class="bi bi-cash-stack"></i> Expenses ({{ expenses|length }})</h5>
-            </div>
+    <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-cash-stack"></i> Expenses ({{ expenses|length }})</h5>
+        <a href="{{ url_for('expense_create', profile_id=profile.id) }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus-circle"></i> Add Expense
+        </a>
+    </div>
+</div>
             <div class="card-body">
                 {% if expenses %}
                     <div class="table-responsive">

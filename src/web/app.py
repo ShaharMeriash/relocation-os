@@ -235,6 +235,146 @@ def date_format_filter(date_obj):
         return 'N/A'
     return date_obj.strftime('%b %d, %Y')
 
+@app.route('/profile/<int:profile_id>/phase/create', methods=['GET', 'POST'])
+def phase_create(profile_id):
+    """Create a new phase for a profile"""
+    profile = get_profile_by_id(profile_id)
+    if not profile:
+        flash('Profile not found', 'error')
+        return redirect(url_for('profiles_list'))
+    
+    if request.method == 'POST':
+        try:
+            phase = create_phase(
+                relocation_profile_id=profile_id,
+                name=request.form['name'],
+                relative_start_month=int(request.form['relative_start_month']),
+                relative_end_month=int(request.form['relative_end_month']),
+                order_index=int(request.form['order_index']),
+                description=request.form.get('description') or None
+            )
+            
+            flash(f'Phase "{phase.name}" created successfully!', 'success')
+            return redirect(url_for('profile_detail', profile_id=profile_id))
+            
+        except Exception as e:
+            flash(f'Error creating phase: {str(e)}', 'error')
+    
+    # Get existing phases to suggest next order_index
+    existing_phases = get_all_phases(relocation_profile_id=profile_id)
+    next_order = len(existing_phases) + 1
+    
+    return render_template('phase_form.html', profile=profile, next_order=next_order)
 
+
+@app.route('/profile/<int:profile_id>/task/create', methods=['GET', 'POST'])
+def task_create(profile_id):
+    """Create a new task for a profile"""
+    profile = get_profile_by_id(profile_id)
+    if not profile:
+        flash('Profile not found', 'error')
+        return redirect(url_for('profiles_list'))
+    
+    phases = get_all_phases(relocation_profile_id=profile_id)
+    if not phases:
+        flash('Please create at least one phase first!', 'error')
+        return redirect(url_for('profile_detail', profile_id=profile_id))
+    
+    if request.method == 'POST':
+        try:
+            # Parse planned date if provided
+            planned_date = None
+            if request.form.get('planned_date'):
+                planned_date = datetime.strptime(request.form['planned_date'], '%Y-%m-%d').date()
+            
+            task = create_task(
+                relocation_profile_id=profile_id,
+                phase_id=int(request.form['phase_id']),
+                title=request.form['title'],
+                description=request.form.get('description') or None,
+                status=request.form.get('status', 'not_started'),
+                critical=request.form.get('critical') == 'on',
+                planned_date=planned_date,
+                notes=request.form.get('notes') or None
+            )
+            
+            flash(f'Task "{task.title}" created successfully!', 'success')
+            return redirect(url_for('profile_detail', profile_id=profile_id))
+            
+        except Exception as e:
+            flash(f'Error creating task: {str(e)}', 'error')
+    
+    return render_template('task_form.html', profile=profile, phases=phases, task=None)
+
+
+@app.route('/profile/<int:profile_id>/expense/create', methods=['GET', 'POST'])
+def expense_create(profile_id):
+    """Create a new expense for a profile"""
+    profile = get_profile_by_id(profile_id)
+    if not profile:
+        flash('Profile not found', 'error')
+        return redirect(url_for('profiles_list'))
+    
+    phases = get_all_phases(relocation_profile_id=profile_id)
+    if not phases:
+        flash('Please create at least one phase first!', 'error')
+        return redirect(url_for('profile_detail', profile_id=profile_id))
+    
+    tasks = get_all_tasks(relocation_profile_id=profile_id)
+    
+    if request.method == 'POST':
+        try:
+            # Parse amounts (convert dollars to cents)
+            estimated = float(request.form['estimated_amount']) * 100
+            
+            actual = None
+            if request.form.get('actual_amount'):
+                actual = float(request.form['actual_amount']) * 100
+            
+            # Parse due date if provided
+            due_date = None
+            if request.form.get('due_date'):
+                due_date = datetime.strptime(request.form['due_date'], '%Y-%m-%d').date()
+            
+            # Get exchange rate if currency differs from profile
+            currency = request.form.get('currency', profile.primary_currency)
+            exchange_rate = None
+            
+            if currency != profile.primary_currency:
+                from currency_service import get_exchange_rate
+                exchange_rate = get_exchange_rate(currency, profile.primary_currency)
+            
+            # Related task (optional)
+            related_task_id = request.form.get('related_task_id')
+            if related_task_id:
+                related_task_id = int(related_task_id)
+            else:
+                related_task_id = None
+            
+            expense = create_expense(
+                relocation_profile_id=profile_id,
+                phase_id=int(request.form['phase_id']),
+                title=request.form['title'],
+                category=request.form.get('category') or None,
+                estimated_amount=int(estimated),
+                actual_amount=int(actual) if actual else None,
+                currency=currency,
+                exchange_rate=exchange_rate,
+                cost_certainty=request.form.get('cost_certainty', 'estimated'),
+                payment_status=request.form.get('payment_status', 'unpaid'),
+                include_in_budget=request.form.get('include_in_budget') == 'on',
+                one_time_relocation_cost=request.form.get('one_time_relocation_cost') == 'on',
+                due_date=due_date,
+                related_task_id=related_task_id,
+                notes=request.form.get('notes') or None
+            )
+            
+            flash(f'Expense "{expense.title}" created successfully!', 'success')
+            return redirect(url_for('profile_detail', profile_id=profile_id))
+            
+        except Exception as e:
+            flash(f'Error creating expense: {str(e)}', 'error')
+    
+    return render_template('expense_form.html', profile=profile, phases=phases, tasks=tasks, expense=None)
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

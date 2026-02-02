@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Create Phase - {{ profile.relocation_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('profiles_list') }}">Profiles</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('profile_detail', profile_id=profile.id) }}">{{ profile.relocation_name }}</a></li>
+                <li class="breadcrumb-item active">New Phase</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header bg-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-calendar-range"></i> Create New Phase
+                </h4>
+                <small class="text-muted">for {{ profile.relocation_name }}</small>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Phase Name *</label>
+                        <input type="text" class="form-control" id="name" name="name" required
+                               placeholder="e.g., Pre-departure Planning">
+                        <small class="form-text text-muted">A descriptive name for this phase</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="relative_start_month" class="form-label">Start Month *</label>
+                            <input type="number" class="form-control" id="relative_start_month" 
+                                   name="relative_start_month" required placeholder="-6">
+                            <small class="form-text text-muted">Months before/after arrival (negative = before)</small>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="relative_end_month" class="form-label">End Month *</label>
+                            <input type="number" class="form-control" id="relative_end_month" 
+                                   name="relative_end_month" required placeholder="-1">
+                            <small class="form-text text-muted">Example: 0 = arrival month</small>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="order_index" class="form-label">Order *</label>
+                            <input type="number" class="form-control" id="order_index" 
+                                   name="order_index" required value="{{ next_order }}" min="1">
+                            <small class="form-text text-muted">For sorting (1, 2, 3...)</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description (Optional)</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"
+                                  placeholder="What happens during this phase..."></textarea>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong><i class="bi bi-info-circle"></i> Timeline Example:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Start: -6, End: -1, Order: 1 → "Pre-departure" (6 months before to 1 month before)</li>
+                            <li>Start: -1, End: 0, Order: 2 → "Moving Month" (1 month before to arrival)</li>
+                            <li>Start: 0, End: 1, Order: 3 → "First Month" (arrival to 1 month after)</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('profile_detail', profile_id=profile.id) }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Create Phase
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
