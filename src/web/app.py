@@ -43,6 +43,11 @@ from expense_operations import (
     mark_expense_paid,
     get_budget_summary
 )
+from category_operations import (
+    create_expense_category,
+    get_all_categories,
+    delete_expense_category
+)
 from models import init_database
 
 # Initialize Flask app
@@ -71,12 +76,12 @@ def index():
     unpaid_expenses = get_all_expenses(payment_status='unpaid')
     
     return render_template('index.html',
-                         profiles=profiles,
-                         total_profiles=total_profiles,
-                         total_tasks=total_tasks,
-                         total_expenses=total_expenses,
-                         incomplete_tasks=incomplete_tasks[:5],  # Show 5 most recent
-                         unpaid_expenses=unpaid_expenses[:5])
+                        profiles=profiles,
+                        total_profiles=total_profiles,
+                        total_tasks=total_tasks,
+                        total_expenses=total_expenses,
+                        incomplete_tasks=incomplete_tasks[:5],  # Show 5 most recent
+                        unpaid_expenses=unpaid_expenses[:5])
 
 
 @app.route('/profiles')
@@ -98,13 +103,22 @@ def profile_detail(profile_id):
     tasks = get_all_tasks(relocation_profile_id=profile_id)
     expenses = get_all_expenses(relocation_profile_id=profile_id)
     budget_summary = get_budget_summary(profile_id)
+    categories = get_all_categories(relocation_profile_id=profile_id)
     
     return render_template('profile_detail.html',
-                         profile=profile,
-                         phases=phases,
-                         tasks=tasks,
-                         expenses=expenses,
-                         budget_summary=budget_summary)
+                        profile=profile,
+                        phases=phases,
+                        tasks=tasks,
+                        expenses=expenses,
+                        budget_summary=budget_summary,
+                        categories=categories)
+    
+    return render_template('profile_detail.html',
+                        profile=profile,
+                        phases=phases,
+                        tasks=tasks,
+                        expenses=expenses,
+                        budget_summary=budget_summary)
 
 
 @app.route('/profile/create', methods=['GET', 'POST'])
@@ -376,5 +390,41 @@ def expense_create(profile_id):
             flash(f'Error creating expense: {str(e)}', 'error')
     
     return render_template('expense_form.html', profile=profile, phases=phases, tasks=tasks, expense=None)
+@app.route('/profile/<int:profile_id>/category/create', methods=['GET', 'POST'])
+def category_create(profile_id):
+    """Create a new expense category"""
+    profile = get_profile_by_id(profile_id)
+    if not profile:
+        flash('Profile not found', 'error')
+        return redirect(url_for('profiles_list'))
+    
+    if request.method == 'POST':
+        try:
+            category = create_expense_category(
+                relocation_profile_id=profile_id,
+                name=request.form['name'],
+                description=request.form.get('description') or None
+            )
+            
+            flash(f'Category "{category.name}" created successfully!', 'success')
+            return redirect(url_for('profile_detail', profile_id=profile_id))
+            
+        except Exception as e:
+            flash(f'Error creating category: {str(e)}', 'error')
+    
+    return render_template('category_form.html', profile=profile)
+
+
+@app.route('/category/<int:category_id>/delete', methods=['POST'])
+def category_delete(category_id):
+    """Delete a category"""
+    if delete_expense_category(category_id):
+        flash('Category deleted successfully', 'success')
+    else:
+        flash('Error deleting category', 'error')
+    
+    return redirect(request.referrer or url_for('index'))
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

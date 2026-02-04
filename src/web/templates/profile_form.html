@@ -72,25 +72,27 @@
                         <div class="col-md-6 mb-3">
                             <label for="primary_currency" class="form-label">Primary Currency</label>
                             <select class="form-select" id="primary_currency" name="primary_currency">
-                                <option value="USD" {% if not profile or profile.primary_currency == 'USD' %}selected{% endif %}>USD - US Dollar</option>
-                                <option value="EUR" {% if profile and profile.primary_currency == 'EUR' %}selected{% endif %}>EUR - Euro</option>
-                                <option value="GBP" {% if profile and profile.primary_currency == 'GBP' %}selected{% endif %}>GBP - British Pound</option>
-                                <option value="CAD" {% if profile and profile.primary_currency == 'CAD' %}selected{% endif %}>CAD - Canadian Dollar</option>
-                                <option value="AUD" {% if profile and profile.primary_currency == 'AUD' %}selected{% endif %}>AUD - Australian Dollar</option>
-                                <option value="JPY" {% if profile and profile.primary_currency == 'JPY' %}selected{% endif %}>JPY - Japanese Yen</option>
-                            </select>
+    <option value="ILS" {% if not profile or profile.primary_currency == 'ILS' %}selected{% endif %}>ILS - Israeli Shekel ₪</option>
+    <option value="USD" {% if profile and profile.primary_currency == 'USD' %}selected{% endif %}>USD - US Dollar</option>
+    <option value="EUR" {% if profile and profile.primary_currency == 'EUR' %}selected{% endif %}>EUR - Euro</option>
+    <option value="GBP" {% if profile and profile.primary_currency == 'GBP' %}selected{% endif %}>GBP - British Pound</option>
+    <option value="CAD" {% if profile and profile.primary_currency == 'CAD' %}selected{% endif %}>CAD - Canadian Dollar</option>
+    <option value="AUD" {% if profile and profile.primary_currency == 'AUD' %}selected{% endif %}>AUD - Australian Dollar</option>
+    <option value="JPY" {% if profile and profile.primary_currency == 'JPY' %}selected{% endif %}>JPY - Japanese Yen</option>
+</select>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="secondary_currency" class="form-label">Secondary Currency (Optional)</label>
                             <select class="form-select" id="secondary_currency" name="secondary_currency">
-                                <option value="">None</option>
-                                <option value="USD" {% if profile and profile.secondary_currency == 'USD' %}selected{% endif %}>USD - US Dollar</option>
-                                <option value="EUR" {% if profile and profile.secondary_currency == 'EUR' %}selected{% endif %}>EUR - Euro</option>
-                                <option value="GBP" {% if profile and profile.secondary_currency == 'GBP' %}selected{% endif %}>GBP - British Pound</option>
-                                <option value="CAD" {% if profile and profile.secondary_currency == 'CAD' %}selected{% endif %}>CAD - Canadian Dollar</option>
-                                <option value="AUD" {% if profile and profile.secondary_currency == 'AUD' %}selected{% endif %}>AUD - Australian Dollar</option>
-                                <option value="JPY" {% if profile and profile.secondary_currency == 'JPY' %}selected{% endif %}>JPY - Japanese Yen</option>
-                            </select>
+    <option value="">None</option>
+    <option value="ILS" {% if profile and profile.secondary_currency == 'ILS' %}selected{% endif %}>ILS - Israeli Shekel ₪</option>
+    <option value="USD" {% if profile and profile.secondary_currency == 'USD' %}selected{% endif %}>USD - US Dollar</option>
+    <option value="EUR" {% if profile and profile.secondary_currency == 'EUR' %}selected{% endif %}>EUR - Euro</option>
+    <option value="GBP" {% if profile and profile.secondary_currency == 'GBP' %}selected{% endif %}>GBP - British Pound</option>
+    <option value="CAD" {% if profile and profile.secondary_currency == 'CAD' %}selected{% endif %}>CAD - Canadian Dollar</option>
+    <option value="AUD" {% if profile and profile.secondary_currency == 'AUD' %}selected{% endif %}>AUD - Australian Dollar</option>
+    <option value="JPY" {% if profile and profile.secondary_currency == 'JPY' %}selected{% endif %}>JPY - Japanese Yen</option>
+</select>
                         </div>
                     </div>
 

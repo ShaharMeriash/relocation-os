@@ -77,15 +77,15 @@
                 <div class="row text-center">
                     <div class="col-md-3">
                         <h6 class="text-muted">Total Estimated</h6>
-                        <h3>${{ "%.2f"|format(budget_summary.total_estimated) }}</h3>
+                        <h3>₪{{ "%.2f"|format(budget_summary.total_estimated) }}</h3>
                     </div>
                     <div class="col-md-3">
                         <h6 class="text-muted">Total Paid</h6>
-                        <h3 class="text-success">${{ "%.2f"|format(budget_summary.total_paid) }}</h3>
+                        <h3 class="text-success">₪{{ "%.2f"|format(budget_summary.total_paid) }}</h3>
                     </div>
                     <div class="col-md-3">
                         <h6 class="text-muted">Remaining</h6>
-                        <h3 class="text-warning">${{ "%.2f"|format(budget_summary.remaining) }}</h3>
+                        <h3 class="text-warning">₪{{ "%.2f"|format(budget_summary.remaining) }}</h3>
                     </div>
                     <div class="col-md-3">
                         <h6 class="text-muted">Progress</h6>
@@ -120,6 +120,46 @@
     </div>
 </div>
 
+<!-- Expense Categories -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-tags"></i> Expense Categories</h5>
+                    <a href="{{ url_for('category_create', profile_id=profile.id) }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-circle"></i> Add Category
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% set categories = categories %}
+                {% if categories %}
+                    <div class="row">
+                        {% for category in categories %}
+                            <div class="col-md-3 mb-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-secondary p-2">
+                                        <i class="bi bi-tag"></i> {{ category.name }}
+                                    </span>
+                                    <form action="{{ url_for('category_delete', category_id=category.id) }}" 
+                                        method="POST" style="display: inline;"
+                                        onsubmit="return confirm('Delete category {{ category.name }}?');">
+                                        <button type="submit" class="btn btn-sm btn-link text-danger p-0 ms-2">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center my-2">No categories yet. Create some to organize your expenses!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 <!-- Phases -->
 <div class="row mb-4">
     <div class="col-md-12">

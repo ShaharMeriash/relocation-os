@@ -34,7 +34,7 @@ class RelocationProfile(Base):
     pets = Column(Boolean, default=False)
     
     # Currency settings
-    primary_currency = Column(String(3), default='USD')  # e.g., 'USD', 'EUR'
+    primary_currency = Column(String(3), default='ILS')  # e.g., 'USD', 'EUR'
     secondary_currency = Column(String(3), nullable=True)  # Optional
     
     # Additional info
@@ -51,6 +51,8 @@ class RelocationProfile(Base):
         return f"<RelocationProfile(name='{self.relocation_name}', {self.origin_country} → {self.destination_country})>"
     # Relationship - all expenses for this profile
     expenses = relationship("Expense", back_populates="relocation_profile", cascade="all, delete-orphan")
+    # Relationship - expense categories
+    expense_categories = relationship("ExpenseCategory", back_populates="relocation_profile", cascade="all, delete-orphan")
 class RelocationPhase(Base):
     """
     Represents a phase/stage in the relocation timeline
@@ -188,6 +190,30 @@ class Expense(Base):
             return False
         from datetime import date
         return date.today() > self.due_date
+    
+class ExpenseCategory(Base):
+    """
+    User-defined expense categories
+    """
+    __tablename__ = 'expense_categories'
+    
+    # Primary key
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    
+    # Category details
+    name = Column(String(100), nullable=False)
+    description = Column(Text, nullable=True)
+    
+    # Foreign key - belongs to a profile
+    relocation_profile_id = Column(Integer, ForeignKey('relocation_profiles.id'), nullable=False)
+    
+    # Relationship
+    relocation_profile = relationship("RelocationProfile", back_populates="expense_categories")
+    
+    def __repr__(self):
+        """String representation for debugging"""
+        return f"<ExpenseCategory(name='{self.name}')>"
+    
 def get_engine(db_path=None):
     """
     Creates a connection to the database

@@ -124,6 +124,7 @@ def format_currency(amount_cents, currency_code):
         'JPY': '¥',
         'CAD': 'C$',
         'AUD': 'A$',
+        'ILS': '₪',
     }
     
     symbol = symbols.get(currency_code, currency_code + ' ')
