@@ -2,10 +2,12 @@ blinker==1.9.0
 click==8.3.1
 Flask==3.1.2
 Flask-WTF==1.2.2
+gunicorn==25.0.1
 itsdangerous==2.2.0
 Jinja2==3.1.6
 MarkupSafe==3.0.3
--e git+https://github.com/ShaharMeriash/relocation-os.git@f229367a383269de6a3bbc6c3232c23c7df16963#egg=relocation_os
+packaging==26.0
+-e git+https://github.com/ShaharMeriash/relocation-os.git@b7ba154abcd1e930bd02dd9938cc1d25d03f1992#egg=relocation_os
 SQLAlchemy==2.0.46
 typing_extensions==4.15.0
 Werkzeug==3.1.5
