@@ -223,11 +223,12 @@ def get_engine(db_path=None):
         import os
         from pathlib import Path
         
-        # Check if we're in production (Railway sets this)
-        if os.environ.get('RAILWAY_ENVIRONMENT'):
-            # Use /tmp for Railway (temporary storage)
+        # Check if we're running on Railway or other cloud platforms
+        # Railway, Heroku, and most cloud platforms set PORT env variable
+        if os.environ.get('PORT') or os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('DYNO'):
+            # Production: use /tmp (writable temporary storage)
             db_path = '/tmp/relocation.db'
-            print(f"✓ Production mode - using temporary storage")
+            print(f"✓ Production mode - using /tmp/relocation.db")
         else:
             # Local development - use project root
             current_file = Path(__file__).resolve()
@@ -244,8 +245,7 @@ def get_engine(db_path=None):
             data_dir = project_root / 'data'
             data_dir.mkdir(exist_ok=True)
             db_path = data_dir / 'relocation.db'
-        
-        print(f"✓ Database path: {db_path}")
+            print(f"✓ Development mode - using {db_path}")
     
     return create_engine(f'sqlite:///{db_path}', echo=False)
 
