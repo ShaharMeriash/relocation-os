@@ -56,7 +56,16 @@ app.config['SECRET_KEY'] = 'your-secret-key-here-change-in-production'
 
 # Initialize database on startup
 with app.app_context():
-    init_database()
+    try:
+        init_database()
+        print("✓ Database initialized successfully")
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+        # Force recreate if needed
+        from models import Base, get_engine
+        engine = get_engine()
+        Base.metadata.create_all(engine)
+        print("✓ Database tables created")
 
 
 @app.route('/')

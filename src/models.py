@@ -223,32 +223,31 @@ def get_engine(db_path=None):
         import os
         from pathlib import Path
         
-        # Get absolute path to project root
-        # Find the relocation-os directory
-        current_file = Path(__file__).resolve()
-        
-        # Navigate up until we find the project root
-        project_root = current_file.parent
-        while project_root.name != 'relocation-os' and project_root.parent != project_root:
-            project_root = project_root.parent
-        
-        if project_root.name != 'relocation-os':
-            # Fallback: use current working directory
-            project_root = Path.cwd()
+        # Check if we're in production (Railway sets this)
+        if os.environ.get('RAILWAY_ENVIRONMENT'):
+            # Use /tmp for Railway (temporary storage)
+            db_path = '/tmp/relocation.db'
+            print(f"✓ Production mode - using temporary storage")
+        else:
+            # Local development - use project root
+            current_file = Path(__file__).resolve()
+            project_root = current_file.parent
+            
             while project_root.name != 'relocation-os' and project_root.parent != project_root:
                 project_root = project_root.parent
-        
-        data_dir = project_root / 'data'
-        
-        # Create data directory if it doesn't exist
-        data_dir.mkdir(exist_ok=True)
-        
-        db_path = data_dir / 'relocation.db'
+            
+            if project_root.name != 'relocation-os':
+                project_root = Path.cwd()
+                while project_root.name != 'relocation-os' and project_root.parent != project_root:
+                    project_root = project_root.parent
+            
+            data_dir = project_root / 'data'
+            data_dir.mkdir(exist_ok=True)
+            db_path = data_dir / 'relocation.db'
         
         print(f"✓ Database path: {db_path}")
     
-    return create_engine(f'sqlite:///{db_path}', echo=False)  # Changed echo to False for cleaner output
-
+    return create_engine(f'sqlite:///{db_path}', echo=False)
 
 def init_database(db_path='data/relocation.db'):
     """
