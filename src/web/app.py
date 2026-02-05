@@ -55,19 +55,45 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here-change-in-production'
 
 # Initialize database on startup
+print("=" * 60)
+print("STARTING DATABASE INITIALIZATION")
+print("=" * 60)
+
 with app.app_context():
     try:
         from models import Base, get_engine
-        engine = get_engine()
+        import os
         
-        # Always ensure tables exist
+        print(f"Environment check:")
+        print(f"  PORT: {os.environ.get('PORT')}")
+        print(f"  RAILWAY_ENVIRONMENT: {os.environ.get('RAILWAY_ENVIRONMENT')}")
+        
+        engine = get_engine()
+        print(f"Engine created: {engine}")
+        
+        print("Creating all tables...")
         Base.metadata.create_all(engine)
-        print("✓ Database tables created/verified")
+        print("✓ Base.metadata.create_all() completed")
+        
+        # Verify tables were created
+        from sqlalchemy import inspect
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        print(f"✓ Tables in database: {tables}")
+        
+        if 'relocation_profiles' in tables:
+            print("✓✓✓ relocation_profiles table EXISTS!")
+        else:
+            print("❌❌❌ relocation_profiles table NOT FOUND!")
         
     except Exception as e:
-        print(f"❌ Error initializing database: {e}")
+        print(f"❌ CRITICAL ERROR initializing database: {e}")
         import traceback
         traceback.print_exc()
+
+print("=" * 60)
+print("DATABASE INITIALIZATION COMPLETE")
+print("=" * 60)
 
 
 @app.route('/')
